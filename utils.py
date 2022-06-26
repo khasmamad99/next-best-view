@@ -83,8 +83,9 @@ def normalize(points):
 
 def flip_axes(points):
     """Inverts the z axis and then exchanges y and z axes.
-    Required for proper visualization. I still do not understand
-    why this becomes necessary...
+    
+    Apparently, open3d orders axes in a different way. This function
+    reorders the axes in the canonical way.
     """
     points[:, 2] = points[:, 2] * -1
     points[:, [0, 1, 2]] = points[:, [0, 2, 1]]
