@@ -29,17 +29,25 @@ def visualize_pointcloud(point_clouds, point_size=0.01, do_flip_axes=False, name
     plot.display()
 
 
-def spherical2cartesian(rtp):
+def spherical2cartesian(rtp, o3d_order=False):
     r, t, p = rtp
     x = r * np.sin(t) * np.cos(p)
     y = r * np.sin(t) * np.sin(p)
     z = r * np.cos(t)
+    if o3d_order: # normal to o3d
+        temp = z
+        z = -y
+        y = temp
     return np.array([x, y, z])
 
 
-def cartesian2spherical(xyz):
-    x, y, z = xyz
-    r = np.linalg.norm(xyz)
+def cartesian2spherical(point, o3d_order=False):
+    x, y, z = point
+    if o3d_order:  # o3d to normal
+        temp = y
+        y = -z
+        z = temp
+    r = np.linalg.norm(point)
     theta = np.arccos(z / r)
     phi = np.arctan2(y, x) % (2 * np.pi) # change output range to 0 - 2pi
     return np.array([r, theta, phi])
