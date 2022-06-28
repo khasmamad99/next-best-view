@@ -73,7 +73,7 @@ def normalize(points):
     """Given a list of points in 3D, centers them at (0, 0, 0)
     and rescales them so that they lie within the unit circle.
     """
-    max_bound = np.max(points, axis=0)
+    max_bound = np.max(np.abs(points), axis=0)
     center = points.mean(axis=0)
     scale = np.linalg.norm(max_bound - center)
     points -= center
