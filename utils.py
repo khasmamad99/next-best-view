@@ -97,8 +97,14 @@ def flip_axes(points):
     reorders the axes in the canonical way.
     """
     points = np.copy(points)
+    single_point = False
+    if len(points.shape) == 1:
+        points = points[None, :]
+        single_point = True
     points[:, 2] = points[:, 2] * -1
     points[:, [0, 1, 2]] = points[:, [0, 2, 1]]
+    if single_point:
+        points = points[0]
     return points
 
 
