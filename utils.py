@@ -96,6 +96,7 @@ def flip_axes(points):
     Apparently, open3d orders axes in a different way. This function
     reorders the axes in the canonical way.
     """
+    points = np.copy(points)
     points[:, 2] = points[:, 2] * -1
     points[:, [0, 1, 2]] = points[:, [0, 2, 1]]
     return points
