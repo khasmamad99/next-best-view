@@ -30,6 +30,7 @@ def visualize_pointcloud(point_clouds, point_size=0.01, do_flip_axes=False, name
 
 
 def spherical2cartesian(rtp, o3d_order=False):
+    # TO DO: check correctness
     r, t, p = rtp
     x = r * np.sin(t) * np.cos(p)
     y = r * np.sin(t) * np.sin(p)
@@ -45,7 +46,7 @@ def cartesian2spherical(point, o3d_order=False):
     x, y, z = point
     if o3d_order:  # o3d to normal
         temp = y
-        y = -z
+        y = z
         z = temp
     r = np.linalg.norm(point)
     theta = np.arccos(z / r)
@@ -67,8 +68,8 @@ def get_rotation_matrix(r_x, r_y):
     return rot_y.dot(rot_x)
 
 
-def get_extrinsic_cam_mtx(cam_posisition_real_world):
-    spherical_coords = cartesian2spherical(cam_posisition_real_world)
+def get_extrinsic_cam_mtx(cam_posisition_real_world, o3d_order=False):
+    spherical_coords = cartesian2spherical(cam_posisition_real_world, o3d_order)
     rot_mtx = get_rotation_matrix(spherical_coords[1], spherical_coords[2])  # rotation matrix (world to camera)
     trans_mtx = np.asarray([0, 0, spherical_coords[0]]).transpose() # world origin in camera coords
     extrinsic_cam_mtx = np.eye(4)
@@ -158,10 +159,10 @@ def setup_virtual_camera(width, height):
     return vis, ctr, param
 
 
-def capture_depth_image(view, vis, ctr, param):
+def capture_depth_image(vis, ctr, param, view, o3d_order=False):
     """View is real world cartesian coordinates of the camera center.
     """
-    param.extrinsic = get_extrinsic_cam_mtx(view)
+    param.extrinsic = get_extrinsic_cam_mtx(view, o3d_order)
     ctr.convert_from_pinhole_camera_parameters(param)
     vis.poll_events()
     vis.update_renderer()
