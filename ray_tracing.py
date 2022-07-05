@@ -11,18 +11,19 @@ class Vec3D:
 
     def __init__(self, np_vector: np.ndarray):
         self.data = np_vector
+        self.single = len(self.data.shape) == 1
 
     @property
     def x(self):
-        return self.data[:, 0]
+        return self.data[:, 0] if self.single else self.data[0]
 
     @property
     def y(self):
-        return self.data[:, 1]
+        return self.data[:, 1] if self.single else self.data[1]
 
     @property
     def z(self):
-        return self.data[:, 2]
+        return self.data[:, 2] if self.single else self.data[2]
 
 
 class Ray:
@@ -125,7 +126,7 @@ def shoot_rays(ray, grid):
     # current_?_index = current voxel index in the ? axis
     # end_?_index = voxel index in the ? axis where the ray exits the grid
     # step_? = {-1, 0, 1} kind of direction of movement in the ? axis
-    # t_max_? = distance along t to be traveled to reach the next border parallel to ? axis
+    # t_max_? = distance along t to be traveled to reach the next border parallel to ?
     # t_delta_? = distance along t to be traveled to cross one voxel in the ? axis
     current_x_index, end_x_index, step_x, t_max_x, t_delta_x = init_params(
         ray_start.x, ray_end.x, ray.direction.x, grid.min_bound.x
