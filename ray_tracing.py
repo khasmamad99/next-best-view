@@ -111,8 +111,8 @@ def shoot_rays(ray, grid, max_t_threh, min_t_thresh=0):
     ray_end = Vec3D((ray.origin.data + t_max[:, None] * ray.direction.data)[hits])
 
     def init_params(start, end, direction, min_bound):
-        current_index = np.clip(np.ceil((start - min_bound) / grid.voxel_size), a_min=0)
-        end_index = np.clip(np.ceil((end - min_bound) / grid.voxel_size), a_min=0)
+        current_index = np.clip(np.ceil((start - min_bound) / grid.voxel_size), a_min=0, a_max=None)
+        end_index = np.clip(np.ceil((end - min_bound) / grid.voxel_size), a_min=0, a_max=None)
         step = np.sign(direction)
         # t_delta is the distance along t to be traveled to cover one voxel in the x direction
         t_delta = np.abs(grid.voxel_size / direction)  # divison by 0 results in inf, which is good
