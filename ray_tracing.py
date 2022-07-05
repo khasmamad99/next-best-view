@@ -102,10 +102,11 @@ def intersection_points(ray, grid):
     return t_min, t_max
 
 
-def shoot_rays(ray, grid):
-    # TO DO: set max ray range
+def shoot_rays(ray, grid, max_t_threh, min_t_thresh=0):
     t_min, t_max = intersection_points(ray, grid)
     hits = np.logical_and(t_min != -np.inf, t_max != np.inf)
+    t_min = np.clip(t_min, a_min=min_t_thresh, a_max=max_t_threh)
+    t_max = np.clip(t_max, a_min=min_t_thresh, a_max=max_t_threh)
     ray_start = Vec3D(ray.origin.data + t_min * ray.direction.data)[hits]
     ray_end = Vec3D(ray.origin.data + t_max * ray.direction.data)[hits]
 
