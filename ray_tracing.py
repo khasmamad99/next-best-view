@@ -41,7 +41,7 @@ class Ray:
         self.origin = origin
         # normalize
         self.direction = Vec3D(
-            direction.data / np.linalg.norm(direction.data, axis=1, keepdims=True)
+            direction.data / np.linalg.norm(direction.data, axis=-1, keepdims=True)
         )
 
     
