@@ -105,16 +105,64 @@ def shoot_rays(ray, grid):
     # TO DO: set max ray range
     t_min, t_max = intersection_points(ray, grid)
     hits = np.logical_and(t_min != -np.inf, t_max != np.inf)
-    ray_start = (ray.origin.data + t_min * ray.direction.data)[hits]
-    ray_end = (ray.origin.data + t_max * ray.direction.data)[hits]
+    ray_start = Vec3D(ray.origin.data + t_min * ray.direction.data)[hits]
+    ray_end = Vec3D(ray.origin.data + t_max * ray.direction.data)[hits]
 
-    current_x_index = np.ceil((ray_start[:, 0] - grid.min_bound.x) / grid.voxel_size)
-    end_x_index = np.ceil((ray_end[:, 0] - grid.min_bound.x) / grid.voxel_size)
-    step_x = np.sign(ray.x)
+    def init_params(start, end, direction, min_bound):
+        current_index = np.clip(np.ceil((start - min_bound) / grid.voxel_size), a_min=0)
+        end_index = np.clip(np.ceil((end - min_bound) / grid.voxel_size), a_min=0)
+        step = np.sign(direction)
+        # t_delta is the distance along t to be traveled to cover one voxel in the x direction
+        t_delta = np.abs(grid.voxel_size / direction)  # divison by 0 results in inf, which is good
+        # t_max_axis is the distance to be traveled to reach the next axis boundary
+        t_max_axis = t_min + (
+                min_bound + (current_index + (direction > 0)) *  grid.voxel_size - start
+            ) / direction
 
-    t_delta_x = np.abs(grid.voxel_size / ray.direction.x)  # divison by 0 results in inf, which is good
-    # t_max_x is the distance to be traveled to reach the next x-axis boundary
-    # 
-    t_max_x = t_min + (
-            grid.min_bound.x + (current_x_index + (ray.direction.x > 0)) *  grid.voxel_size - ray_start[:, 0]
-        ) / ray.direction.x
+        return current_index, end_index, step, t_max_axis, t_delta
+
+    # initialize the parameters
+    # current_?_index = current voxel index in the ? axis
+    # end_?_index = voxel index in the ? axis where the ray exits the grid
+    # step_? = {-1, 0, 1} kind of direction of movement in the ? axis
+    # t_max_? = distance along t to be traveled to reach the next border parallel to ? axis
+    # t_delta_? = distance along t to be traveled to cross one voxel in the ? axis
+    current_x_index, end_x_index, step_x, t_max_x, t_delta_x = init_params(
+        ray_start.x, ray_end.x, ray.direction.x, grid.min_bound.x
+    )
+    current_y_index, end_y_index, step_y, t_max_y, t_delta_y = init_params(
+        ray_start.y, ray_end.y, ray.direction.y, grid.min_bound.y
+    )
+    current_z_index, end_z_index, step_z, t_max_z, t_delta_z = init_params(
+        ray_start.z, ray_end.z, ray.direction.z, grid.min_bound.z
+    )
+
+    while True:
+        remaining_mask = np.logical_or(
+            np.logical_or(
+                current_x_index != end_x_index,
+                current_y_index != end_y_index
+            ),
+            current_z_index != end_z_index
+        )
+        if remaining_mask.sum() == 0:
+            break
+
+        x_mask = np.logical_and(t_max_x < t_max_y, t_max_x < t_max_z)
+        y_mask = np.logical_and(t_max_y < t_max_x, t_max_y < t_max_z)
+        z_mask = np.logical_and(t_max_z < t_max_x, t_max_z < t_max_y)
+
+        current_x_index[x_mask] += step_x[x_mask]
+        t_max_x[x_mask] += t_delta_x[x_mask]
+
+        current_y_index[y_mask] += step_y[y_mask]
+        t_max_y[y_mask] += t_delta_y[y_mask]
+
+        current_z_index[z_mask] += step_z[y_mask]
+        t_max_z[z_mask] += t_delta_z[z_mask]
+        
+
+
+
+
+    
