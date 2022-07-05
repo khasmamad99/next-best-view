@@ -15,15 +15,15 @@ class Vec3D:
 
     @property
     def x(self):
-        return self.data[:, 0] if self.single else self.data[0]
+        return self.data[:, 0] if not self.single else self.data[0]
 
     @property
     def y(self):
-        return self.data[:, 1] if self.single else self.data[1]
+        return self.data[:, 1] if not self.single else self.data[1]
 
     @property
     def z(self):
-        return self.data[:, 2] if self.single else self.data[2]
+        return self.data[:, 2] if not self.single else self.data[2]
 
 
 class Ray:
