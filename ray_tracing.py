@@ -150,9 +150,18 @@ def shoot_rays(ray, grid, max_t_threh, min_t_thresh=0):
         if remaining_mask.sum() == 0:
             break
 
-        x_mask = np.logical_and(t_max_x < t_max_y, t_max_x < t_max_z)
-        y_mask = np.logical_and(t_max_y < t_max_x, t_max_y < t_max_z)
-        z_mask = np.logical_and(t_max_z < t_max_x, t_max_z < t_max_y)
+        x_mask = np.logical_and(
+            np.logical_and(t_max_x < t_max_y, t_max_x < t_max_z),
+            remaining_mask
+        )
+        y_mask = np.logical_and(
+            np.logical_and(t_max_y < t_max_x, t_max_y < t_max_z),
+            remaining_mask
+        )
+        z_mask = np.logical_and(
+            np.logical_and(t_max_z < t_max_y, t_max_z < t_max_y),
+            remaining_mask
+        )
 
         current_x_index[x_mask] += step_x[x_mask]
         t_max_x[x_mask] += t_delta_x[x_mask]
@@ -160,8 +169,10 @@ def shoot_rays(ray, grid, max_t_threh, min_t_thresh=0):
         current_y_index[y_mask] += step_y[y_mask]
         t_max_y[y_mask] += t_delta_y[y_mask]
 
-        current_z_index[z_mask] += step_z[y_mask]
+        current_z_index[z_mask] += step_z[z_mask]
         t_max_z[z_mask] += t_delta_z[z_mask]
+
+        yield np.vstack([current_x_index, current_y_index, current_z_index]).T
         
 
 
