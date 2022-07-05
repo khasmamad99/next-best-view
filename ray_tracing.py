@@ -28,17 +28,20 @@ class Vec3D:
 class Ray:
 
     def __init__(self, origin: Vec3D, direction: Vec3D):
-        """Initializes a ray with a origining point and direction vector.
+        """Initializes a ray with a origin point and direction vector.
 
         Parameters
         ----------
         origin: Vec3D
-            (x, y, z) coordinates of the origining point.
+            (x, y, z) coordinates of the origin point.
         direction: Vec3D
             (x, y, z) coordinates of the direction vector.
         """
         self.origin = origin
-        self.direction = Vec3D(direction / np.linalg.norm(direction))
+        # normalize
+        self.direction = Vec3D(
+            direction.data / np.linalg.norm(direction.data, axis=1, keepdims=True)
+        )
 
     
     def __len__(self):
@@ -96,3 +99,22 @@ def intersection_points(ray, grid):
         t_max[mask] = t_dir_max[mask]
 
     return t_min, t_max
+
+
+def shoot_rays(ray, grid):
+    # TO DO: set max ray range
+    t_min, t_max = intersection_points(ray, grid)
+    hits = np.logical_and(t_min != -np.inf, t_max != np.inf)
+    ray_start = (ray.origin.data + t_min * ray.direction.data)[hits]
+    ray_end = (ray.origin.data + t_max * ray.direction.data)[hits]
+
+    current_x_index = np.ceil((ray_start[:, 0] - grid.min_bound.x) / grid.voxel_size)
+    end_x_index = np.ceil((ray_end[:, 0] - grid.min_bound.x) / grid.voxel_size)
+    step_x = np.sign(ray.x)
+
+    t_delta_x = np.abs(grid.voxel_size / ray.direction.x)  # divison by 0 results in inf, which is good
+    # t_max_x is the distance to be traveled to reach the next x-axis boundary
+    # 
+    t_max_x = t_min + (
+            grid.min_bound.x + (current_x_index + (ray.direction.x > 0)) *  grid.voxel_size - ray_start[:, 0]
+        ) / ray.direction.x
