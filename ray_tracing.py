@@ -1,13 +1,6 @@
 import numpy as np
 
 
-"""
-Initialization:
-Given a ray and a grid, check if the ray intersects with the grid. If it 
-does not terminate and return false. If it does, set the ray starting
-point to the intersection point.
-"""
-
 class VoxelType:
     unseen   = -1
     empty    =  0
@@ -18,11 +11,6 @@ class Vec3D:
 
     def __init__(self, np_vector: np.ndarray):
         self.data = np_vector
-
-    @staticmethod
-    def normalize(vector):
-        data = vector.data / np.linalg.norm(vector.data, axis=1, keepdims=True)
-        return Vec3D(data)
 
     @property
     def x(self):
@@ -50,11 +38,12 @@ class Ray:
             (x, y, z) coordinates of the direction vector.
         """
         self.origin = origin
-        self.direction = Vec3D.normalize(direction)
+        self.direction = Vec3D(direction / np.linalg.norm(direction))
 
     
     def __len__(self):
         return self.origin.data.shape[0]
+
 
 class Grid:
 
@@ -70,7 +59,7 @@ class Grid:
         return self.data[idx]
 
     def set_label(self, idx, label: VoxelType):
-        # To DO: vectorize
+        # TO DO: vectorize
         self.data[idx] = label
 
 
@@ -85,6 +74,7 @@ def intersection_points(ray, grid):
     t_dir_min = np.empty([len(ray),], dtype=np.float32)
     t_dir_max = np.empty([len(ray),], dtype=np.float32)
 
+    # TO DO: what happens if origin is inside the bounds?
     for origin, dir, min_bound, max_bound in zip(
         ray.origin.data.T, ray.direction.data.T,
         grid.min_bound.data, grid.max_bound.data
