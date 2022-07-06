@@ -140,8 +140,8 @@ def shoot_rays(ray, grid, max_t_threh, min_t_thresh=0):
     )
 
     while True:
-        remaining_mask = np.logical_or(
-            np.logical_or(
+        remaining_mask = np.logical_and(
+            np.logical_and(
                 current_x_index != end_x_index,
                 current_y_index != end_y_index
             ),
