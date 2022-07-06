@@ -62,10 +62,6 @@ class Grid:
         # TO DO: decide on the specifics of idx
         return self.data[idx]
 
-    def set_label(self, idx, label: VoxelType):
-        # TO DO: vectorize
-        self.data[idx] = label
-
 
 def intersection_points(ray, grid):
     """Returns the minimum distance along the ray to enter and exit the 
@@ -111,9 +107,17 @@ def shoot_rays(ray, grid, max_t_threh, min_t_thresh=0):
     ray_end = Vec3D((ray.origin.data + t_max[:, None] * ray.direction.data)[hits])
 
     def init_params(start, end, direction, min_bound):
-        current_index = np.clip(np.ceil((start - min_bound) / grid.voxel_size), a_min=0, a_max=None)
-        end_index = np.clip(np.ceil((end - min_bound) / grid.voxel_size), a_min=0, a_max=None)
-        step = np.sign(direction)
+        current_index = np.clip(
+            np.floor((start - min_bound) / grid.voxel_size), 
+            a_min=0, 
+            a_max=grid.num_voxels - 1
+        ).astype(np.int8)
+        end_index = np.clip(
+            np.floor((end - min_bound) / grid.voxel_size), 
+            a_min=0, 
+            a_max=grid.num_voxels - 1
+        ).astype(np.int8)
+        step = np.sign(direction).astype(np.int8)
         # t_delta is the distance along t to be traveled to cover one voxel in the x direction
         t_delta = np.abs(grid.voxel_size / direction)  # divison by 0 results in inf, which is good
         # t_max_axis is the distance to be traveled to reach the next axis boundary
@@ -140,6 +144,8 @@ def shoot_rays(ray, grid, max_t_threh, min_t_thresh=0):
     )
 
     while True:
+        # set the labels for the current voxels
+        grid.data[current_x_index, current_y_index, current_z_index] = VoxelType.occupied
         remaining_mask = np.logical_and(
             np.logical_and(
                 current_x_index != end_x_index,
@@ -172,10 +178,4 @@ def shoot_rays(ray, grid, max_t_threh, min_t_thresh=0):
         current_z_index[z_mask] += step_z[z_mask]
         t_max_z[z_mask] += t_delta_z[z_mask]
 
-        yield np.vstack([current_x_index, current_y_index, current_z_index]).T
-        
-
-
-
-
-    
+        # yield np.vstack([current_x_index, current_y_index, current_z_index]).T
