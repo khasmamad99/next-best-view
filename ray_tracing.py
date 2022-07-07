@@ -62,6 +62,20 @@ class Grid:
         # TO DO: decide on the specifics of idx
         return self.data[idx]
 
+    
+    def set_labels(self, idx, label):
+        """
+        Parameters
+        ---------
+        idx: np.array
+            array of x,y,z indices with shape (num_indices, 3).
+        label: int
+            label to be set
+        """
+        assert label in [VoxelType.empty, VoxelType.unseen, VoxelType.occupied]
+        x, y, z = idx.T
+        self.data[x, y, z] = label
+
 
 def intersection_points(ray, grid):
     """Returns the minimum distance along the ray to enter and exit the 
@@ -177,5 +191,3 @@ def shoot_rays(ray, grid, max_t_threh, min_t_thresh=0):
 
         current_z_index[z_mask] += step_z[z_mask]
         t_max_z[z_mask] += t_delta_z[z_mask]
-
-        # yield np.vstack([current_x_index, current_y_index, current_z_index]).T
