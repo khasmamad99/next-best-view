@@ -5,6 +5,7 @@ class VoxelType:
     unseen   = -1
     empty    =  0
     occupied =  1
+    seen     =  2
 
 
 class Vec3D:
@@ -159,7 +160,7 @@ def shoot_rays(ray, grid, max_t_threh, min_t_thresh=0):
 
     while True:
         # set the labels for the current voxels
-        grid.data[current_x_index, current_y_index, current_z_index] = VoxelType.occupied
+        grid.data[current_x_index, current_y_index, current_z_index] = VoxelType.seen
         remaining_mask = np.logical_and(
             np.logical_and(
                 current_x_index != end_x_index,
