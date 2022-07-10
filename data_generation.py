@@ -64,8 +64,6 @@ def move(direction, location):
             phi += step_size_radians
         phi %= (2 * PI) # fix the range back to [0, 2PI]
     
-        print(r, theta, phi)
-
     new_location = spherical2cartesian([r, theta, phi])
     return new_location
 
