@@ -16,9 +16,9 @@ def move(direction, location):
     south, east, and west. Up/down movements happen along the longitude,
     while left/right movements happen along the latitude. If close to a pole,
     left/right movements are restricted to one-third of the perimeter of the
-    current latitude circle to avoid moving full-circle. Up/down movements
-    can go across a pole. Since there is no direction at the poles,
-    movement does not stop at a pole.
+    current latitude circle to avoid moving full-circle in a single step. 
+    Up/down movements can go across a pole. Since there is no direction
+    at the poles, movement does not stop at a pole.
 
     Parameters
     ----------
@@ -58,7 +58,6 @@ def move(direction, location):
         latitude_perimeter = 2 * PI * latitude_radius
         step_size = min(step_arc_length, latitude_perimeter / 3)  # restrict to one-third
         step_size_radians = step_size / latitude_radius
-        print(step_size_radians, latitude_perimeter, step_size)
         if direction == "left":
             phi -= step_size_radians
         else:
