@@ -113,8 +113,8 @@ def intersection_points(ray, grid):
     return t_min, t_max
 
 
-def shoot_rays(ray, grid, max_t_threh, min_t_thresh=0):
-    t_min, t_max = intersection_points(ray, grid)
+def shoot_rays(ray, partial_grid, gt_grid, max_t_threh, min_t_thresh=0):
+    t_min, t_max = intersection_points(ray, partial_grid)
     hits = np.logical_and(t_min != -np.inf, t_max != np.inf)
     t_min = np.clip(t_min, a_min=min_t_thresh, a_max=max_t_threh)
     t_max = np.clip(t_max, a_min=min_t_thresh, a_max=max_t_threh)
@@ -123,21 +123,21 @@ def shoot_rays(ray, grid, max_t_threh, min_t_thresh=0):
 
     def init_params(start, end, direction, min_bound):
         current_index = np.clip(
-            np.floor((start - min_bound) / grid.voxel_size), 
+            np.floor((start - min_bound) / partial_grid.voxel_size), 
             a_min=0, 
-            a_max=grid.num_voxels - 1
+            a_max=partial_grid.num_voxels - 1
         ).astype(np.int8)
         end_index = np.clip(
-            np.floor((end - min_bound) / grid.voxel_size), 
+            np.floor((end - min_bound) / partial_grid.voxel_size), 
             a_min=0, 
-            a_max=grid.num_voxels - 1
+            a_max=partial_grid.num_voxels - 1
         ).astype(np.int8)
         step = np.sign(direction).astype(np.int8)
-        # t_delta is the distance along t to be traveled to cover one voxel in the x direction
-        t_delta = np.abs(grid.voxel_size / direction)  # divison by 0 results in inf, which is good
+        # t_delta is the distance along t to be traveled to cover one voxel along x
+        t_delta = np.abs(partial_grid.voxel_size / direction)  # divison by 0 = inf: good
         # t_max_axis is the distance to be traveled to reach the next axis boundary
         t_max_axis = t_min + (
-                min_bound + (current_index + (direction > 0)) *  grid.voxel_size - start
+                min_bound + (current_index + (direction > 0)) *  partial_grid.voxel_size - start
             ) / direction
 
         return current_index, end_index, step, t_max_axis, t_delta
@@ -149,28 +149,60 @@ def shoot_rays(ray, grid, max_t_threh, min_t_thresh=0):
     # t_max_? = distance along t to be traveled to reach the next border parallel to ?
     # t_delta_? = distance along t to be traveled to cross one voxel in the ? axis
     current_x_index, end_x_index, step_x, t_max_x, t_delta_x = init_params(
-        ray_start.x, ray_end.x, ray.direction.x, grid.min_bound.x
+        ray_start.x, ray_end.x, ray.direction.x, partial_grid.min_bound.x
     )
     current_y_index, end_y_index, step_y, t_max_y, t_delta_y = init_params(
-        ray_start.y, ray_end.y, ray.direction.y, grid.min_bound.y
+        ray_start.y, ray_end.y, ray.direction.y, partial_grid.min_bound.y
     )
     current_z_index, end_z_index, step_z, t_max_z, t_delta_z = init_params(
-        ray_start.z, ray_end.z, ray.direction.z, grid.min_bound.z
+        ray_start.z, ray_end.z, ray.direction.z, partial_grid.min_bound.z
     )
+    
+    # init the mask of rays that are terminated, 
+    # i.e. has reached an occupied voxel or end index
+    terminated_mask = np.zeros(current_x_index.shape, dtype=bool)
 
     while True:
-        # set the labels for the current voxels
-        grid.data[current_x_index, current_y_index, current_z_index] = VoxelType.seen
-        remaining_mask = np.logical_and(
-            np.logical_and(
-                current_x_index != end_x_index,
-                current_y_index != end_y_index
+        # get the list of rays that have reached an occupied voxel
+        occupied_mask = gt_grid.data[
+                current_x_index, current_y_index, current_z_index
+            ] == VoxelType.occupied
+        empty_mask = np.logical_not(occupied_mask)
+
+        # update the grid by setting labels
+        partial_grid.data[
+            current_x_index[occupied_mask], 
+            current_y_index[occupied_mask], 
+            current_z_index[occupied_mask]
+        ] = VoxelType.occupied
+
+        partial_grid.data[
+            current_x_index[empty_mask], 
+            current_y_index[empty_mask], 
+            current_z_index[empty_mask]
+        ] = VoxelType.empty
+
+        # get the list of rays that have reached the end
+        end_mask = np.logical_or(
+            np.logical_or(
+                current_x_index == end_x_index,
+                current_y_index == end_y_index
             ),
-            current_z_index != end_z_index
+            current_z_index == end_z_index
         )
+
+        # update the list of terminated
+        terminated_mask = np.logical_or(
+            terminated_mask, 
+            np.logical_or(occupied_mask, end_mask)
+        )
+
+        # get the list of remaining rays and check if all have terminated
+        remaining_mask = np.logical_not(terminated_mask)
         if remaining_mask.sum() == 0:
             break
 
+        # ?_mask = list of rays that move in ? direction
         x_mask = np.logical_and(
             np.logical_and(t_max_x < t_max_y, t_max_x < t_max_z),
             remaining_mask
@@ -184,6 +216,7 @@ def shoot_rays(ray, grid, max_t_threh, min_t_thresh=0):
             remaining_mask
         )
 
+        # advance the rays
         current_x_index[x_mask] += step_x[x_mask]
         t_max_x[x_mask] += t_delta_x[x_mask]
 
