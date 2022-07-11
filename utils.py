@@ -4,8 +4,8 @@ import k3d
 
 
 def random_sphere_point(npoints=1, ndim=3):
-    points = np.random.randn(ndim, npoints)
-    points /= np.linalg.norm(points, axis=0)
+    points = np.random.randn(npoints, ndim)
+    points /= np.linalg.norm(points, axis=-1)
     return points
     
 
