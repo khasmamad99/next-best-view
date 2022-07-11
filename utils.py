@@ -3,6 +3,12 @@ import open3d as o3d
 import k3d
 
 
+def random_sphere_point(npoints=1, ndim=3):
+    points = np.random.randn(ndim, npoints)
+    points /= np.linalg.norm(points, axis=0)
+    return points
+    
+
 def visualize_occupancy(occupancy_grid, do_flip_axes=False):
     if not isinstance(occupancy_grid, (list, tuple)):
         occupancy_grid =  [occupancy_grid]
