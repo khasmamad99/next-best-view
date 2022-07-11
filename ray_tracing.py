@@ -77,6 +77,12 @@ class Grid:
         x, y, z = idx.T
         self.data[x, y, z] = label
 
+    
+    def copy(self):
+        copy_grid = Grid(self.voxel_size, self.num_voxels, self.min_bound, self.max_bound)
+        copy_grid.data = np.copy(self.data)
+        return copy_grid
+
 
 def intersection_points(ray, grid):
     """Returns the minimum distance along the ray to enter and exit the 
