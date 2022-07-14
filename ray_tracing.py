@@ -145,7 +145,6 @@ def shoot_rays(ray, partial_grid, gt_grid, max_t_threh, min_t_thresh=0):
         t_max_axis = t_min + (
                 min_bound + (current_index + (direction > 0)) *  partial_grid.voxel_size - start
             ) / direction
-
         return current_index, end_index, step, t_max_axis, t_delta
 
     # initialize the parameters
@@ -210,15 +209,15 @@ def shoot_rays(ray, partial_grid, gt_grid, max_t_threh, min_t_thresh=0):
 
         # ?_mask = list of rays that move in ? direction
         x_mask = np.logical_and(
-            np.logical_and(t_max_x < t_max_y, t_max_x < t_max_z),
+            np.logical_and(t_max_x <= t_max_y, t_max_x <= t_max_z),
             remaining_mask
         )
         y_mask = np.logical_and(
-            np.logical_and(t_max_y < t_max_x, t_max_y < t_max_z),
+            np.logical_and(t_max_y <= t_max_x, t_max_y <= t_max_z),
             remaining_mask
         )
         z_mask = np.logical_and(
-            np.logical_and(t_max_z < t_max_y, t_max_z < t_max_y),
+            np.logical_and(t_max_z <= t_max_y, t_max_z <= t_max_y),
             remaining_mask
         )
 
