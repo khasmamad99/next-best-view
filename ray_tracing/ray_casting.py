@@ -1,103 +1,21 @@
 import numpy as np
 
-
-class VoxelType:
-    unseen   = -1
-    empty    =  0
-    occupied =  1
-    seen     =  2
+from .classes import *
 
 
-class Vec3D:
-
-    def __init__(self, np_vector: np.ndarray):
-        self.data = np_vector
-        self.single = len(self.data.shape) == 1
-
-    @property
-    def x(self):
-        return self.data[:, 0] if not self.single else self.data[0]
-
-    @property
-    def y(self):
-        return self.data[:, 1] if not self.single else self.data[1]
-
-    @property
-    def z(self):
-        return self.data[:, 2] if not self.single else self.data[2]
-
-
-class Ray:
-
-    def __init__(self, origin: Vec3D, direction: Vec3D):
-        """Initializes a ray with a origin point and direction vector.
-
-        Parameters
-        ----------
-        origin: Vec3D
-            (x, y, z) coordinates of the origin point.
-        direction: Vec3D
-            (x, y, z) coordinates of the direction vector.
-        """
-        self.origin = origin
-        # normalize
-        self.direction = Vec3D(
-            direction.data / np.linalg.norm(direction.data, axis=-1, keepdims=True)
-        )
-
-    
-    def __len__(self):
-        return self.origin.data.shape[0]
-
-
-class Grid:
-
-    def __init__(self, voxel_size: float, num_voxels: int, min_bound: Vec3D, max_bound: Vec3D):
-        self.voxel_size = voxel_size
-        self.num_voxels = num_voxels
-        self.min_bound = min_bound
-        self.max_bound = max_bound
-        self.data = np.ones([num_voxels, num_voxels, num_voxels]) * VoxelType.unseen
-
-    def __idx__(self, idx):
-        # TO DO: decide on the specifics of idx
-        return self.data[idx]
-
-    
-    def set_labels(self, idx, label):
-        """
-        Parameters
-        ---------
-        idx: np.array
-            array of x,y,z indices with shape (num_indices, 3).
-        label: int
-            label to be set
-        """
-        assert label in [VoxelType.empty, VoxelType.unseen, VoxelType.occupied]
-        x, y, z = idx.T
-        self.data[x, y, z] = label
-
-    
-    def copy(self):
-        copy_grid = Grid(self.voxel_size, self.num_voxels, self.min_bound, self.max_bound)
-        copy_grid.data = np.copy(self.data)
-        return copy_grid
-
-
-def intersection_points(ray, grid):
-    """Returns the minimum distance along the ray to enter and exit the 
-    grid, t_min and t_max respectively. If there is no intersection,
-    returns t_min and t_max are set to inf.
+def intersection_points(rays, grid):
+    """Returns the minimum distance along the rays to enter and exit the grid, 
+    t_min and t_max. If there is no intersection, t_min and t_max are set to inf.
     """
-    t_min = np.ones([len(ray),], dtype=np.float32) * -np.inf
-    t_max = np.ones([len(ray),], dtype=np.float32) * np.inf
+    t_min = np.ones([len(rays),], dtype=np.float32) * -np.inf
+    t_max = np.ones([len(rays),], dtype=np.float32) * np.inf
 
-    t_dir_min = np.empty([len(ray),], dtype=np.float32)
-    t_dir_max = np.empty([len(ray),], dtype=np.float32)
+    t_dir_min = np.empty([len(rays),], dtype=np.float32)
+    t_dir_max = np.empty([len(rays),], dtype=np.float32)
 
     # TO DO: what happens if origin is inside the bounds?
     for origin, dir, min_bound, max_bound in zip(
-        ray.origin.data.T, ray.direction.data.T,
+        rays.origin.data.T, rays.direction.data.T,
         grid.min_bound.data, grid.max_bound.data
     ):
         inv_dir = 1. / dir  # division by 0 results in inf
@@ -119,13 +37,25 @@ def intersection_points(ray, grid):
     return t_min, t_max
 
 
-def shoot_rays(ray, partial_grid, gt_grid, max_t_threh, min_t_thresh=0):
-    t_min, t_max = intersection_points(ray, partial_grid)
+def trace_rays(rays, partial_grid, gt_grid, max_t_threh, min_t_thresh=0):
+    """Shoots the given rays towards `gt_grid` and labels `partial_grid`. 
+    
+    The voxels in `partial_grid` are labeled as `empty` if a ray passes through 
+    the corresponding voxel in `gt_grid`. If a ray hits a voxel in `gt_grid`, 
+    the corresponding voxel in `partial_grid` is labeled as `occupied`. 
+    All the remaining voxels in `partial_grid` remain labeled `unseen`.
+
+    This implementation borrows a lot from 
+    https://github.com/cgyurgyik/fast-voxel-traversal-algorithm/blob/master/amanatidesWooAlgorithm.cpp.
+    Unlike the above implementation, here ray tracing is done for all rays at once
+    in a numpy vectorized fashion.
+    """
+    t_min, t_max = intersection_points(rays, partial_grid)
     hits = np.logical_and(t_min != -np.inf, t_max != np.inf)
     t_min = np.clip(t_min, a_min=min_t_thresh, a_max=max_t_threh)
     t_max = np.clip(t_max, a_min=min_t_thresh, a_max=max_t_threh)
-    ray_start = Vec3D((ray.origin.data + t_min[:, None] * ray.direction.data)[hits])
-    ray_end = Vec3D((ray.origin.data + t_max[:, None] * ray.direction.data)[hits])
+    ray_start = Vec3D((rays.origin.data + t_min[:, None] * rays.direction.data)[hits])
+    ray_end = Vec3D((rays.origin.data + t_max[:, None] * rays.direction.data)[hits])
 
     def init_params(start, end, direction, min_bound):
         current_index = np.clip(
@@ -149,18 +79,18 @@ def shoot_rays(ray, partial_grid, gt_grid, max_t_threh, min_t_thresh=0):
 
     # initialize the parameters
     # current_?_index = current voxel index in the ? axis
-    # end_?_index = voxel index in the ? axis where the ray exits the grid
+    # end_?_index = voxel index in the ? axis where the rays exits the grid
     # step_? = {-1, 0, 1} kind of direction of movement in the ? axis
     # t_max_? = distance along t to be traveled to reach the next border parallel to ?
     # t_delta_? = distance along t to be traveled to cross one voxel in the ? axis
     current_x_index, end_x_index, step_x, t_max_x, t_delta_x = init_params(
-        ray_start.x, ray_end.x, ray.direction.x, partial_grid.min_bound.x
+        ray_start.x, ray_end.x, rays.direction.x, partial_grid.min_bound.x
     )
     current_y_index, end_y_index, step_y, t_max_y, t_delta_y = init_params(
-        ray_start.y, ray_end.y, ray.direction.y, partial_grid.min_bound.y
+        ray_start.y, ray_end.y, rays.direction.y, partial_grid.min_bound.y
     )
     current_z_index, end_z_index, step_z, t_max_z, t_delta_z = init_params(
-        ray_start.z, ray_end.z, ray.direction.z, partial_grid.min_bound.z
+        ray_start.z, ray_end.z, rays.direction.z, partial_grid.min_bound.z
     )
     
     # init the mask of rays that are terminated, 
