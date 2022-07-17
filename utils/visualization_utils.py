@@ -1,5 +1,8 @@
+from typing import Union
+
 import numpy as np
 import k3d
+import open3d as o3d
 
 from .data_utils import flip_axes
 
@@ -28,3 +31,41 @@ def visualize_pointcloud(point_clouds, point_size=0.01, do_flip_axes=False, name
         plot += plt_points
     plt_points.shader ='3d' 
     plot.display()
+
+
+def visualize_camera_path(path: Union[list, np.ndarray], sphere_radius=np.sqrt(3)):
+    plt = k3d.plot()
+
+    # create a sphere
+    sphere = o3d.geometry.TriangleMesh.create_sphere(
+        radius=sphere_radius, resolution=10, create_uv_map=False)
+    vertices = np.array(sphere.vertices)
+    indices  = np.array(sphere.triangles)
+    plt += k3d.lines(
+        vertices, indices, indices_type='triangle',
+        shader='mesh', width=0.003, color=0x570861, opacity=0.7)
+    # royal green: 0x126108
+
+    # plot the camera path
+    if isinstance(path, list):
+        path = np.vstack(path)
+    indices = np.array([[i, i+1] for i in range(len(path) - 1)])
+    plt += k3d.lines(
+        path, indices, indices_type='segment', 
+        shader='mesh', width=0.015, color=0x126108,
+        # color_map= k3d.colormaps.matplotlib_color_maps.summer,
+        # attribute=np.log(np.arange(len(indices))),
+        opacity=0.7
+    )
+
+    # plot camera points
+    point_sizes = np.ones(len(path)) * 0.15
+    point_sizes[0] = 0.25
+    plt += k3d.points(
+        path, 
+        point_sizes=point_sizes,
+        attribute=np.log(np.arange(len(path))+1),
+        color_map= k3d.colormaps.matplotlib_color_maps.summer,
+    )
+
+    plt.display()
