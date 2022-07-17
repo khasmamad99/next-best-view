@@ -2,9 +2,10 @@ import numpy as np
 import open3d as o3d
 
 
-def random_sphere_point(npoints: int=1, ndim: int=3):
+def random_sphere_point(npoints: int=1, ndim: int=3, radius: float=1.):
     points = np.random.randn(npoints, ndim)
     points /= np.linalg.norm(points, axis=-1)
+    points *= radius
     return points
 
 
