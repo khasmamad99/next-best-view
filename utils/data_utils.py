@@ -2,6 +2,17 @@ import numpy as np
 import open3d as o3d
 
 
+def init_camera_intrinsic(camera: str = "kinect"):
+    camera = camera.lower()
+    assert camera in ["kinect", "primesense"]
+    if camera == "kinect":
+        return o3d.camera.PinholeCameraIntrinsic(
+            o3d.camera.PinholeCameraIntrinsicParameters.Kinect2DepthCameraDefault)
+    elif camera == "primsense":
+        return o3d.camera.PinholeCameraIntrinsic(
+            o3d.camera.PinholeCameraIntrinsicParameters.PrimeSenseDefault)
+
+
 def random_sphere_point(npoints: int=1, ndim: int=3, radius: float=1.):
     points = np.random.randn(npoints, ndim)
     points /= np.linalg.norm(points, axis=-1)
