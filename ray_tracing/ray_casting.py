@@ -1,6 +1,25 @@
 import numpy as np
+import open3d as o3d
 
 from .classes import *
+
+
+def generate_rays(
+    eye: np.ndarray,
+    camera_intrinsic: o3d.camera.PinholeCameraIntrinsic,
+    center: np.ndarray = np.array([0, 0, 0]),
+    up: np.ndarray = np.array([0, 1, 0]),
+) -> Vec3D:
+    fx, _ = camera_intrinsic.get_focal_length()
+    x0, y0 = camera_intrinsic.get_principal_point()
+    width, height = x0 * 2, y0 * 2
+    fov = np.arctan2(x0, fx) * 180 / np.pi
+
+    scene = o3d.t.geometry.RaycastingScene()
+    rays = scene.create_rays_pinhole(fov, center, eye, up, width, height)
+    rays = rays.numpy().reshape(-1, 6)
+    rays = Ray(origin=Vec3D(rays[:, :3]), direction=Vec3D(rays[:, 3:]))
+    return rays
 
 
 def intersection_points(rays, grid):
