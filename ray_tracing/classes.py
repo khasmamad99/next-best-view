@@ -5,8 +5,10 @@ class VoxelType:
     unseen   : int = -1
     empty    : int =  0
     occupied : int =  1
-    seen     : int =  2
 
+    @staticmethod
+    def is_valid(voxel_type: int):
+        return voxel_type in [[VoxelType.empty, VoxelType.unseen, VoxelType.occupied]]
 
 class Vec3D:
     """A wrapper class for numpy arrays. Holds convenience functions for accessing
@@ -53,6 +55,7 @@ class Grid:
         max_bound: Vec3D,
         default_voxel_type: int = VoxelType.unseen
     ):
+        assert VoxelType.is_valid(default_voxel_type)
         self.voxel_size = voxel_size
         self.num_voxels = num_voxels
         self.min_bound = min_bound
@@ -61,7 +64,7 @@ class Grid:
 
     
     def set_labels(self, idx: int, label: int):
-        assert label in [VoxelType.empty, VoxelType.unseen, VoxelType.occupied]
+        assert VoxelType.is_valid(label)
         x, y, z = idx.T
         self.data[x, y, z] = label
 
