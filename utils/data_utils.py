@@ -125,7 +125,7 @@ def to_occupancy_grid(
     occupied_voxel_indices = tuple(occupied_voxel_indices.T.tolist())
     occupancy_grid = np.zeros([num_voxels, num_voxels, num_voxels])
     occupancy_grid[occupied_voxel_indices] = 1
-    return occupancy_grid
+    return occupancy_grid, voxel_size, min_bound, max_bound
 
 
 
