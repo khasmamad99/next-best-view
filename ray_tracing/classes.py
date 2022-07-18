@@ -8,7 +8,7 @@ class VoxelType:
 
     @staticmethod
     def is_valid(voxel_type: int):
-        return voxel_type in [[VoxelType.empty, VoxelType.unseen, VoxelType.occupied]]
+        return voxel_type in [VoxelType.empty, VoxelType.unseen, VoxelType.occupied]
 
 class Vec3D:
     """A wrapper class for numpy arrays. Holds convenience functions for accessing
