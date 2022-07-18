@@ -47,6 +47,7 @@ class Ray:
 
 
 class Grid:
+
     def __init__(
         self, 
         voxel_size: float, 
@@ -73,3 +74,7 @@ class Grid:
         copy_grid = Grid(self.voxel_size, self.num_voxels, self.min_bound, self.max_bound)
         copy_grid.data = np.copy(self.data)
         return copy_grid
+
+    def number_of(self, voxel_type: int):
+        assert VoxelType.is_valid(voxel_type)
+        return (self.data == voxel_type).sum()
