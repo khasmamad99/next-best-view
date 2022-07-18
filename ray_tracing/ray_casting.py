@@ -17,7 +17,7 @@ def generate_rays(
     fx = camera_intrinsic[0, 0]
     x0, y0 = camera_intrinsic[:2, 2]
     
-    width, height = x0 * 2, y0 * 2
+    width, height = int(x0) * 2, int(y0) * 2
     fov = np.arctan2(x0, fx) * 180 / np.pi
 
     scene = o3d.t.geometry.RaycastingScene()
