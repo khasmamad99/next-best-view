@@ -1,3 +1,5 @@
+from typing import Union
+
 import numpy as np
 import open3d as o3d
 
@@ -6,12 +8,15 @@ from .classes import *
 
 def generate_rays(
     eye: np.ndarray,
-    camera_intrinsic: o3d.camera.PinholeCameraIntrinsic,
+    camera_intrinsic: Union[np.ndarray, o3d.camera.PinholeCameraIntrinsic],
     center: np.ndarray = np.array([0, 0, 0]),
     up: np.ndarray = np.array([0, 1, 0]),
 ) -> Vec3D:
-    fx, _ = camera_intrinsic.get_focal_length()
-    x0, y0 = camera_intrinsic.get_principal_point()
+    if isinstance(camera_intrinsic, o3d.camera.PinholeCameraIntrinsic):
+        camera_intrinsic = camera_intrinsic.intrinsic_matrix
+    fx = camera_intrinsic[0, 0]
+    x0, y0 = camera_intrinsic[:2, 2]
+    
     width, height = x0 * 2, y0 * 2
     fov = np.arctan2(x0, fx) * 180 / np.pi
 
