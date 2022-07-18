@@ -45,12 +45,19 @@ class Ray:
 
 
 class Grid:
-    def __init__(self, voxel_size: float, num_voxels: int, min_bound: Vec3D, max_bound: Vec3D):
+    def __init__(
+        self, 
+        voxel_size: float, 
+        num_voxels: int, 
+        min_bound: Vec3D, 
+        max_bound: Vec3D,
+        default_voxel_type: int = VoxelType.unseen
+    ):
         self.voxel_size = voxel_size
         self.num_voxels = num_voxels
         self.min_bound = min_bound
         self.max_bound = max_bound
-        self.data = np.ones([num_voxels, num_voxels, num_voxels]) * VoxelType.unseen
+        self.data = np.ones([num_voxels, num_voxels, num_voxels]) * default_voxel_type
 
     
     def set_labels(self, idx: int, label: int):
