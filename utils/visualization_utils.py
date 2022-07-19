@@ -33,7 +33,7 @@ def visualize_pointcloud(point_clouds, point_size=0.01, do_flip_axes=False, name
     plot.display()
 
 
-def visualize_camera_path(path: Union[list, np.ndarray], sphere_radius=np.sqrt(3)):
+def visualize_camera_path(path: Union[list, np.ndarray], sphere_radius=np.sqrt(3.1)):
     plt = k3d.plot()
 
     # create a sphere
@@ -68,4 +68,58 @@ def visualize_camera_path(path: Union[list, np.ndarray], sphere_radius=np.sqrt(3
         color_map= k3d.colormaps.matplotlib_color_maps.summer,
     )
 
+    plt.display()
+
+
+def visualize_partial_model(
+    partial_model: np.ndarray, 
+    do_flip_axes: bool = False, 
+    num_points_thresh: int = 1000
+) -> None:
+    occupied_points = np.concatenate(
+        [c[:, np.newaxis] for c in np.where(partial_model == 1)], axis=1
+    )
+
+    empty_points = np.concatenate(
+        [c[:, np.newaxis] for c in np.where(partial_model == 0)], axis=1
+    )
+    num_empty = len(empty_points)
+    if num_empty > num_points_thresh:
+        empty_points = empty_points[np.random.randint(0, num_empty, size=(num_points_thresh,))]
+
+    unseen_points = np.concatenate(
+        [c[:, np.newaxis] for c in np.where(partial_model == -1)], axis=1
+    )
+    num_unseen = len(unseen_points)
+    if num_unseen > num_points_thresh :
+        unseen_points = unseen_points[np.random.randint(0, num_unseen, size=(num_points_thresh,))]
+
+    if do_flip_axes:
+        occupied_points = flip_axes(occupied_points)
+        empty_points    = flip_axes(empty_points)
+        unseen_points   = flip_axes(unseen_points)
+
+    plt = k3d.plot(grid_visible=False)
+    # color palette: split-complementary from https://www.color-name.com/fandango.color
+    plt += k3d.points(
+        occupied_points,
+        point_size = 1.,
+        shader  = "flat",
+        opacity = 1.,
+        color   = 0x48B533  # American Green
+    )
+    plt += k3d.points(
+        empty_points,
+        point_size = 0.75,
+        shader  = "flat",
+        opacity = 0.75,
+        color   = 0x33B5A0  # Keppel
+    )
+    plt += k3d.points(
+        unseen_points,
+        point_size = 0.5,
+        shader  = "flat",
+        opacity = 0.5,
+        color   = 0xB53389  # Fandango
+    )
     plt.display()
