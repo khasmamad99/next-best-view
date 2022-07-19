@@ -34,7 +34,7 @@ def visualize_pointcloud(point_clouds, point_size=0.01, do_flip_axes=False, name
 
 
 def visualize_camera_path(path: Union[list, np.ndarray], sphere_radius=np.sqrt(3.1)):
-    plt = k3d.plot()
+    plt = k3d.plot(grid_visible=False)
 
     # create a sphere
     sphere = o3d.geometry.TriangleMesh.create_sphere(
