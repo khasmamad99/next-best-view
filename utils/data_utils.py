@@ -42,7 +42,7 @@ def cartesian2spherical(xyz):
         y = xyz[:, 1]
         z = xyz[:, 2]
 
-    r = np.linalg.norm(xyz, axis=0)
+    r = np.linalg.norm(xyz, axis=-1)
     theta = np.arccos(z / r)
     # calculate phi and change output range to 0 - 2pi
     phi = np.arctan2(y, x) % (2 * np.pi)
