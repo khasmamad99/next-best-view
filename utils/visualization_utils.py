@@ -100,13 +100,13 @@ def visualize_partial_model(
         unseen_points   = flip_axes(unseen_points)
 
     plt = k3d.plot(grid_visible=False)
-    # color palette: split-complementary from https://www.color-name.com/fandango.color
+    # color palette from https://www.color-name.com/fandango.color
     plt += k3d.points(
         occupied_points,
         point_size = 1.,
         shader  = "flat",
         opacity = 1.,
-        color   = 0x48B533  # American Green
+        color   = 0xB5A033  # Brass
     )
     plt += k3d.points(
         empty_points,
