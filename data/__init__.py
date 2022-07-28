@@ -1,0 +1,1 @@
+from .modules.shapenet_nbv import ShapeNetNBV
