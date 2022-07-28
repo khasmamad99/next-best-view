@@ -1,5 +1,11 @@
-*.zip
+# data related stuff
 data/data/*
+
+# zip files (obv)
+*.zip
+
+# TensorBoard runs
+runs/
 
 # Byte-compiled / optimized / DLL files
 __pycache__/
