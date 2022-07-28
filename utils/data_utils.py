@@ -1,5 +1,22 @@
 import numpy as np
 import open3d as o3d
+import torch
+from torch.nn.functional import conv3d
+
+
+def downsize_grid(grid: np.numpy, factor: int = 4, bias: float = 0):
+    grid = torch.from_numpy(grid.astype(np.float32))
+    # add batch dim
+    grid = grid[None, ...]
+    kernel = torch.ones([1, 1, factor, factor, factor])
+    bias = torch.Tensor([bias])
+    resized_grid = conv3d(grid, kernel, bias, stride=factor)
+    # remove batch dim
+    resized_grid = resized_grid.unsqueeze(0)
+    resized_grid = np.asarray(resized_grid)
+    # clip between 0 and 1
+    resized_grid = np.clip(resized_grid, a_min=0, a_max=1)
+    return resized_grid
 
 
 def init_camera_intrinsic(camera: str = "kinect"):
