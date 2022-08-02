@@ -22,7 +22,7 @@ class ShapeNetNBV(Dataset):
         3 : 'left'
     }
 
-    def __init__(self, data_dir_path: Path, file_extension: str = 'pickle'):
+    def __init__(self, data_dir_path: Path, file_extension: str = 'pickle', overfit: bool = False):
         assert file_extension in ['pickle', 'json']
         self.file_extension = file_extension
         synset_ids = list(data_dir_path.glob('*'))
@@ -34,6 +34,8 @@ class ShapeNetNBV(Dataset):
                 for scan_sequence in scan_sequences:
                     scans = list(scan_sequence.glob(f'*{file_extension}'))
                     self.path_to_files += scans
+                    if overfit:
+                        return
 
     def __len__(self):
         return len(self.path_to_files)
@@ -47,7 +49,7 @@ class ShapeNetNBV(Dataset):
         partial_model = torch.Tensor(scan['partial_model']).float()
         nbv = torch.LongTensor([self.dir2idx[scan['next_view_dir']]])
         return {
-            'partial_model': partial_model,
+            'partial_model': partial_model.unsqueeze(0),  # add channel dimension
             'nbv' : nbv
         }
 
