@@ -32,7 +32,7 @@ def init_camera_intrinsic(camera: str = "kinect"):
 
 def random_sphere_point(npoints: int=1, ndim: int=3, radius: float=1.):
     points = np.random.randn(npoints, ndim)
-    points /= np.linalg.norm(points, axis=-1)
+    points /= np.linalg.norm(points, axis=-1, keepdims=True)
     points *= radius
     return points
 
