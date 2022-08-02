@@ -4,7 +4,7 @@ import torch
 from torch.nn.functional import conv3d
 
 
-def downsize_grid(grid: np.numpy, factor: int = 4, bias: float = 0):
+def downsize_grid(grid: np.ndarray, factor: int = 4, bias: float = 0):
     grid = torch.from_numpy(grid.astype(np.float32))
     # add batch dim
     grid = grid[None, ...]
@@ -12,7 +12,7 @@ def downsize_grid(grid: np.numpy, factor: int = 4, bias: float = 0):
     bias = torch.Tensor([bias])
     resized_grid = conv3d(grid, kernel, bias, stride=factor)
     # remove batch dim
-    resized_grid = resized_grid.unsqueeze(0)
+    resized_grid = resized_grid.squeeze(0)
     resized_grid = np.asarray(resized_grid)
     # clip between 0 and 1
     resized_grid = np.clip(resized_grid, a_min=0, a_max=1)
