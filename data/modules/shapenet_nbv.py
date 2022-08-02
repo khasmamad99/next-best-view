@@ -55,12 +55,10 @@ class ShapeNetNBV(Dataset):
             scan = self.load_pickle(path)
         elif self.file_extension == 'json':
             scan = self.load_json(path)
-        partial_model = torch.Tensor(scan['partial_model']).float()
+        # wrap in torch.Tensor and add channel dimension
+        partial_model = torch.Tensor(scan['partial_model']).float().unsqueeze(0)
         nbv = torch.LongTensor([self.dir2idx[scan['next_view_dir']]])
-        return {
-            'partial_model': partial_model.unsqueeze(0),  # add channel dimension
-            'nbv' : nbv
-        }
+        return partial_model, nbv
 
     def load_json(self, path):
         with open(path, 'r') as f:
