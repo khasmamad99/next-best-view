@@ -4,8 +4,9 @@ data/data/*
 # zip files (obv)
 *.zip
 
-# TensorBoard runs
+# logs
 runs/
+lightning_logs/
 
 # notebooks
 notebooks/
