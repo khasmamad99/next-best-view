@@ -2,6 +2,7 @@ from typing import Callable, List
 from functools import partial
 from pathlib import Path
 import json
+import pickle
 import os
 
 import open3d as o3d
@@ -9,6 +10,7 @@ import numpy as np
 import torch.nn as nn
 
 from utils.data_utils import *
+from utils.binvox_rw import *
 from ray_tracing import *
 
 
@@ -177,7 +179,8 @@ def scan_object(
 
 
 def generate_data(
-    path_to_objs: List[Path],
+    obj_dir_paths: List[Path],
+    file_extension: str,
     outpout_dir: Union[str, Path] = 'data/data/ShapeNetCore.v2_nbv',
     num_voxels: int = 32,
     num_starting_views: int = 1,
@@ -186,11 +189,13 @@ def generate_data(
     max_iter: int = 10,
     camera_type: str = "kinect",
     camera_intrinsic_mtx: Union[np.ndarray, o3d.camera.PinholeCameraIntrinsic] = None,
-    debug: bool = False
+    debug: bool = False,
+    dump_type: str = 'pickle',
+    log_period = 10,
 ):
     """Function for generating data.
 
-    First, 3D objects are read from the paths given with `path_to_objs`. Then a ground truth voxel grid
+    First, 3D objects are read from the paths given with `obj_dir_paths`. Then a ground truth voxel grid
     is created from each of them. Then, the following algorithm is applied:
     ```
     Given: Ground Truth Model G
@@ -207,33 +212,56 @@ def generate_data(
 
     ```
     """
+    assert file_extension in ['binvox', 'obj']
+    assert dump_type in ['pickle', 'json']
     nbv_fn = partial(
         next_best_view_exhaustive,
         utility_fn = num_discovered_occupied_voxels,
     )   
+    num_objs_skipped = 0
+    num_pairs_written = 0
+    num_objs_written = 0
+    num_total_objects = len(obj_dir_paths) * num_starting_views
+    for idx, obj_dir_path in enumerate(obj_dir_paths):
 
-    for idx, obj_path in enumerate(path_to_objs):
-        synset_id, obj_id = obj_path.parts[-4:-2]
-        if debug:
-            print(f"\nProcessing {synset_id}/{obj_id}\t[{idx+1}/{len(path_to_objs)}]")
+        # read the file and make a grid
+        synset_id, obj_id = obj_dir_path.parts[-3:-1]
+        # if debug:
+        print(f"\n[{idx+1}/{len(obj_dir_paths)}]\tProcessing {synset_id}/{obj_id}")
         # setup ground truth grid
-        try:
-            obj_mesh = o3d.io.read_triangle_mesh(str(obj_path))
-            grid_data, voxel_size, min_bound, max_bound = to_occupancy_grid(
-                obj_mesh, input_type="mesh", do_normalization=True, num_voxels=num_voxels
-            )   
-        except:
-            print(f"Error loading {obj_path}. Skipping")
-            continue
+        if file_extension == 'obj':
+            obj_path = obj_dir_path / "model_normalized.obj"
+            try:
+                obj_mesh = o3d.io.read_triangle_mesh(str(obj_path))
+                grid_data, voxel_size, min_bound, max_bound = to_occupancy_grid(
+                    obj_mesh, input_type="mesh", do_normalization=True, num_voxels=num_voxels
+                )   
+            except:
+                print(f"\tError loading {obj_path}. Skipping")
+                continue
+        elif file_extension == 'binvox':
+            binvox_path = obj_dir_path / "model_normalized.surface.binvox"
+            try:
+                with open(binvox_path, 'rb') as f:
+                    grid_data = read_as_3d_array(f).data
+            except Exception as e:
+                print(e)
+                continue
+            grid_data = downsize_grid(grid_data)
+            voxel_size = 2. / 32
+            num_voxels = 32
+            min_bound = np.array([-1, -1, -1])
+            max_bound = -min_bound
+
         gt_grid = Grid(voxel_size, num_voxels, Vec3D(min_bound), Vec3D(max_bound))
         gt_grid.data = grid_data
         if debug:
-            print("Finished setting the Ground Truth Grid")
+            print("\tFinished setting the Ground Truth Grid")
 
         starting_views = random_sphere_point(npoints=num_starting_views, radius=sphere_radius)
         for sview_idx, sview in enumerate(starting_views):
             if debug:
-                print(f"Scan session {sview_idx+1}/{num_starting_views} from starting view {sview}")
+                print(f"\tScan session {sview_idx+1}/{num_starting_views} from starting view {sview}")
             obj_dict = dict()
             for scan_idx, scan in enumerate(scan_object(
                 gt_grid, 
@@ -254,25 +282,41 @@ def generate_data(
                         "next_view_utility" : int(best_utility)
                     }
                     if debug:
-                        print(f"\tReceived scan no {scan_idx}")
+                        print(f"\t\tReceived scan no {scan_idx}")
                         for key, val in sample_info.items():
                             if key == "partial_model":
                                 num_occupied = (np.array(val) == VoxelType.occupied).sum()
-                                print(f"\t\t# of occed : {num_occupied}")
+                                print(f"\t\t\t# of occed : {num_occupied}")
                             else:
-                                print(f"\t\t{key} : {val}")
+                                print(f"\t\t\t{key} : {val}")
                         print()
                     obj_dict[scan_idx] = sample_info
                 else:
                     coverage = (partial_grid_data == VoxelType.occupied).sum() \
                             / (gt_grid.data == VoxelType.occupied).sum()
                     # discard the ones with inadequate coverage
-                    if coverage > coverage_thresh:
+                    if coverage < coverage_thresh:
+                        print(f"\t\tCoverage is {coverage}, skipping")
+                        num_objs_skipped += 1
+                    else:
                         file_dir_path = Path(outpout_dir, synset_id, obj_id, str(sview_idx))
-                        if debug:
-                            print(f"\tCoverage is {coverage}, writing data to {file_dir_path}")
+                        print(f"\t\tCoverage is {coverage}, writing data to {file_dir_path}")
                         os.makedirs(file_dir_path, exist_ok=True)
                         for scan_idx, scan_dict in obj_dict.items():
-                            file_path = Path(file_dir_path / f'{scan_idx}.json')
-                            with open(file_path, 'w', encoding='utf-8') as f:
-                                json.dump(scan_dict, f, ensure_ascii=False, indent=4)
+                            if dump_type == 'json':
+                                file_path = Path(file_dir_path / f'{scan_idx}.json')
+                                with open(file_path, 'w', encoding='utf-8') as f:
+                                    json.dump(scan_dict, f, ensure_ascii=False, indent=4)
+                            elif dump_type == 'pickle':
+                                file_path = Path(file_dir_path / f'{scan_idx}.pickle')
+                                with open(file_path, 'wb') as f:
+                                    pickle.dump(scan_dict, f, protocol=pickle.HIGHEST_PROTOCOL)
+                            num_pairs_written += 1
+                        num_objs_written += 1
+                
+        if (idx + 1) % log_period == 0:
+            print("\n# of objects written:", num_objs_written)
+            print("# of objects skipped:", num_objs_skipped)
+            print("# of pairs written:", num_pairs_written)
+            print("# of total objects:", num_total_objects)
+
