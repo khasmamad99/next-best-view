@@ -23,9 +23,16 @@ class LitVoxNet(pl.LightningModule):
 		if not self.overfit:
 			# add l2 regularization/weight decay
 			optimizer = torch.optim.SGD(self.parameters(), lr=1e-3, momentum=0.9, weight_decay=1e-3)
+			lr_scheduler = torch.optim.lr_scheduler.MultiStepLR(
+				optimizer, 
+				milestones=[10, 20, 30], 
+				gamma=0.3, 
+				verbose=False
+			)
+			return [optimizer], [lr_scheduler]
 		else:
 			optimizer = torch.optim.SGD(self.parameters(), lr=1e-3, momentum=0.9)
-		return optimizer
+			return optimizer
 
 	def training_step(self, train_batch, batch_idx):
 		loss = self.step(train_batch, batch_idx, self.train_acc)
