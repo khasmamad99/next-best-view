@@ -12,13 +12,16 @@ class VoxNet(nn.Module):
         self.backbone = nn.Sequential(
             nn.Conv3d(in_channels=1, out_channels=32, kernel_size=5, stride=2),
             nn.LeakyReLU(0.1),
+            nn.Dropout(),
             nn.Conv3d(in_channels=32, out_channels=32, kernel_size=3, stride=1),
             nn.LeakyReLU(0.1),
-            nn.MaxPool3d(kernel_size=2, stride=2)
+            nn.MaxPool3d(kernel_size=2, stride=2),
+            nn.Dropout()
         )
         self.fc = nn.Sequential(
             nn.Linear(in_features=6912, out_features=128),
             nn.ReLU(),
+            nn.Dropout(),
             nn.Linear(in_features=128, out_features=num_classes)
         )
 
