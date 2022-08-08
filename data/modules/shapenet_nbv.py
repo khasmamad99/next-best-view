@@ -28,7 +28,6 @@ class ShapeNetNBV(Dataset):
         file_extension: str = 'pickle', 
         select_objects_start: int = 0,
         select_objects_end: int = None,
-        overfit: bool = False
     ):
         assert file_extension in ['pickle', 'json']
         if select_objects_end:
@@ -43,9 +42,8 @@ class ShapeNetNBV(Dataset):
                 for scan_sequence in scan_sequences:
                     scans = list(scan_sequence.glob(f'*{file_extension}'))
                     self.path_to_files += scans
-                    if overfit:
-                        return
-
+    
+    
     def __len__(self):
         return len(self.path_to_files)
 
