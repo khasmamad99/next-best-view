@@ -7,10 +7,16 @@ import torchmetrics
 
 from .. import VoxNet
 
+
 class LitVoxNet(pl.LightningModule):
-	def __init__(self, num_classes, overfit=False):
+	def __init__(
+		self, 
+		num_classes: int = 4, 
+		dropout_p: float = 0.5,
+		overfit=False,
+	):
 		super().__init__()
-		self.model = VoxNet(num_classes=num_classes)
+		self.model = VoxNet(num_classes=num_classes, dropout_p=dropout_p)
 		self.overfit = overfit
 		self.train_acc = torchmetrics.Accuracy()
 		self.val_acc = torchmetrics.Accuracy()
@@ -19,20 +25,6 @@ class LitVoxNet(pl.LightningModule):
 		x = self.model(x)
 		return x
 
-	def configure_optimizers(self):
-		if not self.overfit:
-			# add l2 regularization/weight decay
-			optimizer = torch.optim.SGD(self.parameters(), lr=1e-3, momentum=0.9, weight_decay=1e-3)
-			lr_scheduler = torch.optim.lr_scheduler.StepLR(
-				optimizer, 
-				step_size=10, 
-				gamma=0.5, 
-				verbose=False
-			)
-			return [optimizer], [lr_scheduler]
-		else:
-			optimizer = torch.optim.SGD(self.parameters(), lr=1e-3, momentum=0.9)
-			return optimizer
 
 	def training_step(self, train_batch, batch_idx):
 		loss = self.step(train_batch, batch_idx, self.train_acc)
