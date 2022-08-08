@@ -1,0 +1,20 @@
+trainer:
+    accelerator: cpu
+    devices: 4
+    max_epochs: 50
+    log_every_n_steps: 10
+    deterministic: warn
+model:
+    num_classes: 4
+    dropout_p: 0
+    overfit: True
+optimizer:
+  class_path: torch.optim.SGD
+  init_args:
+    lr: 0.001
+    momentum: 0.9
+data:
+    data_dir_path: data/data/ShapeNetCore.v2_nbv
+    batch_size: 8  # desired batch_size / devices
+    overfit: True
+    
