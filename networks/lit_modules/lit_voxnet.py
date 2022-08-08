@@ -23,10 +23,10 @@ class LitVoxNet(pl.LightningModule):
 		if not self.overfit:
 			# add l2 regularization/weight decay
 			optimizer = torch.optim.SGD(self.parameters(), lr=1e-3, momentum=0.9, weight_decay=1e-3)
-			lr_scheduler = torch.optim.lr_scheduler.MultiStepLR(
+			lr_scheduler = torch.optim.lr_scheduler.StepLR(
 				optimizer, 
-				milestones=[10, 20, 30], 
-				gamma=0.3, 
+				step_size=10, 
+				gamma=0.5, 
 				verbose=False
 			)
 			return [optimizer], [lr_scheduler]
@@ -36,14 +36,14 @@ class LitVoxNet(pl.LightningModule):
 
 	def training_step(self, train_batch, batch_idx):
 		loss = self.step(train_batch, batch_idx, self.train_acc)
-		self.log('train_loss', loss)
-		self.log('train_acc', self.train_acc, on_step=False, on_epoch=True)
+		self.log('loss/train', loss, sync_dist=True)
+		self.log('acc/train', self.train_acc, on_step=False, on_epoch=True, sync_dist=True)
 		return loss
 
 	def validation_step(self, val_batch, batch_idx):
 		loss = self.step(val_batch, batch_idx, self.val_acc)
-		self.log('val_loss', loss)
-		self.log('val_acc', self.val_acc, on_step=False, on_epoch=True, prog_bar=True)
+		self.log('loss/val', loss, sync_dist=True)
+		self.log('acc/val', self.val_acc, on_step=False, on_epoch=True, prog_bar=True, sync_dist=True)
 
 
 	def step(self, batch, batch_idx, acc_metric):
