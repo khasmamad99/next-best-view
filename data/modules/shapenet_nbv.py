@@ -33,10 +33,10 @@ class ShapeNetNBV(Dataset):
         if select_objects_end:
             assert select_objects_start < select_objects_end
         self.file_extension = file_extension
-        synset_ids = list(data_dir_path.glob('*'))
+        synset_ids = sorted(list(data_dir_path.glob('*')))
         self.path_to_files = list()
         for synset_id in synset_ids:
-            obj_ids = list(synset_id.glob('*'))[select_objects_start:select_objects_end]
+            obj_ids = sorted(list(synset_id.glob('*')))[select_objects_start:select_objects_end]
             for obj_id in obj_ids:
                 scan_sequences = list(obj_id.glob('*'))
                 for scan_sequence in scan_sequences:
