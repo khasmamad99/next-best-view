@@ -1,22 +1,23 @@
+
 from torch.nn import functional as F
 import pytorch_lightning as pl
 import torchmetrics
 
-from .. import VoxNet
+from .. import Basic3DCNN
 
 
-class LitVoxNet(pl.LightningModule):
+class LitBasic3DCNN(pl.LightningModule):
 	def __init__(
 		self, 
 		num_classes: int = 4, 
-		dropout_p: float = 0.5,
 		overfit=False,
 	):
 		super().__init__()
-		self.model = VoxNet(num_classes=num_classes, dropout_p=dropout_p)
+		self.model = Basic3DCNN(num_classes=num_classes)
 		self.overfit = overfit
 		self.train_acc = torchmetrics.Accuracy()
 		self.val_acc = torchmetrics.Accuracy()
+
 
 	def forward(self, x):
 		x = self.model(x)
